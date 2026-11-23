@@ -275,9 +275,12 @@ export function MorphicApp() {
 
         {view === "create" && (
           <section className="mx-auto max-w-xl pt-6 text-center md:pt-16">
-            <h1 className="font-display text-5xl leading-none tracking-tight md:text-6xl">What do you need?</h1>
-            <p className="mx-auto mt-4 max-w-sm text-muted">One sentence. A small app, built for that job only.</p>
-            <div className="relative mt-8 text-left">
+            <h1 className="font-display text-5xl leading-none tracking-tight md:text-6xl">
+              What do you need?
+              <span className="mx-auto mt-4 block h-px w-16 bg-accent" />
+            </h1>
+            <p className="mx-auto mt-5 max-w-sm text-muted">One sentence. A small app, built for that job only.</p>
+            <div className="mt-8 text-left">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -287,17 +290,19 @@ export function MorphicApp() {
                     void start();
                   }
                 }}
-                rows={3}
+                rows={4}
                 placeholder="Track mileage for the truck and flag when an oil change is due"
-                className="w-full resize-none rounded-card border border-line bg-surface px-5 py-4 text-lg outline-none placeholder:text-faint focus:border-accent"
+                className="w-full resize-none rounded-card border border-line bg-surface px-5 py-4 text-lg leading-relaxed outline-none placeholder:text-faint focus:border-accent"
               />
-              <button
-                type="button"
-                onClick={() => void start()}
-                className="absolute bottom-3 right-3 min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-bg"
-              >
-                Generate
-              </button>
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void start()}
+                  className="min-h-11 rounded-full bg-accent px-5 text-sm font-medium text-bg"
+                >
+                  Generate
+                </button>
+              </div>
             </div>
             {note && <p className="mt-3 text-sm text-danger">{note}</p>}
             <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -343,8 +348,11 @@ export function MorphicApp() {
             onAdd={(row) => addRow(open, row)}
             onToggle={(i) => toggleDone(open, i)}
             onEdit={() => {
-              if (!edit.trim()) return;
-              setNote(`Noted: “${edit.trim()}”. Surgical edits come next.`);
+              const text = edit.trim();
+              if (!text || !open) return;
+              const result = applyEdit(open, text);
+              updatePiece(open.id, () => result.piece);
+              setNote(result.note);
               setEdit("");
             }}
           />
@@ -501,9 +509,10 @@ function ComponentView({
   onToggle: (index: number) => void;
 }) {
   if (component.type === "stats") {
+    const stats = liveStats(piece, component.stats);
     return (
       <div className="grid grid-cols-3 gap-2">
-        {component.stats.slice(0, 3).map((s) => (
+        {stats.slice(0, 3).map((s) => (
           <div key={s.label} className="rounded-xl bg-surface-2 px-2 py-3 text-center">
             <div className="font-display text-2xl">{s.value}</div>
             <div className="mt-1 text-xs uppercase tracking-wide text-faint">{s.label}</div>
@@ -513,7 +522,8 @@ function ComponentView({
     );
   }
   if (component.type === "progress") {
-    const pct = Math.max(0, Math.min(100, Math.round((component.value / Math.max(component.goal, 1)) * 100)));
+    const live = liveProgress(piece, component);
+    const pct = Math.max(0, Math.min(100, Math.round((live.value / Math.max(live.goal, 1)) * 100)));
     const r = 28;
     const c = 2 * Math.PI * r;
     return (
@@ -534,9 +544,9 @@ function ComponentView({
           />
         </svg>
         <div>
-          <div className="font-medium">{component.label}</div>
+          <div className="font-medium">{live.label}</div>
           <div className="text-sm text-muted">
-            {component.value} / {component.goal} {component.unit ?? ""}
+            {live.value} / {live.goal} {live.unit ?? ""}
           </div>
         </div>
       </div>
@@ -664,6 +674,59 @@ function Empty({ title, body, action, onClick }: { title: string; body: string; 
       </button>
     </div>
   );
+}
+
+function liveStats(piece: Piece, stats: { label: string; value: string; sub?: string }[]) {
+  const n = piece.records.length;
+  const done = piece.records.filter((r) => r.done).length;
+  const volume = piece.records.reduce((sum, r) => sum + Number(r.weight || 0) * Number(r.reps || 0), 0);
+  const money = piece.records.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  return stats.map((s) => {
+    const label = s.label.toLowerCase();
+    if (volume && label.includes("volume")) {
+      return { ...s, value: volume >= 1000 ? `${(volume / 1000).toFixed(1)}k` : String(volume) };
+    }
+    if (money && (label.includes("outstanding") || label.includes("owed"))) {
+      return { ...s, value: `$${money.toLocaleString()}` };
+    }
+    if (label.includes("done")) return { ...s, value: String(done) };
+    if (/week|plant|habit|invoice|set|entr/.test(label)) return { ...s, value: String(n) };
+    return s;
+  });
+}
+
+function liveProgress(
+  piece: Piece,
+  progress: { label: string; value: number; goal: number; unit?: string },
+) {
+  if (!/goal|week|progress/i.test(progress.label)) return progress;
+  return { ...progress, value: piece.records.length };
+}
+
+function applyEdit(piece: Piece, text: string): { piece: Piece; note: string } {
+  const lower = text.toLowerCase();
+  const rename = text.match(/^(?:rename(?: it)? to|call it)\s+(.+)$/i);
+  if (rename) {
+    const title = rename[1].trim();
+    return { piece: { ...piece, title, today: { ...piece.today, title } }, note: `Renamed to ${title}.` };
+  }
+  if (lower.includes("note")) {
+    const entity = piece.entities[0];
+    if (entity && !entity.fields.some((f) => f.id === "notes")) {
+      const entities = piece.entities.map((e, i) =>
+        i === 0 ? { ...e, fields: [...e.fields, { id: "notes", label: "Notes", type: "text" as const }] } : e,
+      );
+      return { piece: { ...piece, entities }, note: "Added a notes field." };
+    }
+  }
+  if (lower.startsWith("remind")) {
+    return {
+      piece: { ...piece, reminder: { title: "Reminder", schedule: text } },
+      note: "Reminder updated.",
+    };
+  }
+  if (piece.assumptions.includes(text)) return { piece, note: "Already assumed." };
+  return { piece: { ...piece, assumptions: [...piece.assumptions, text].slice(0, 6) }, note: "Assumption saved." };
 }
 
 function titleOf(row: RecordRow) {

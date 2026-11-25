@@ -1,0 +1,11 @@
+node_modules
+.vercel
+.output
+dist
+screenshots
+.grok
+.env
+.env.*
+*.log
+.project_id
+.DS_Store

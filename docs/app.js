@@ -133,7 +133,7 @@ function component(c, p) {
     const value = p.records.length;
     const pct = Math.max(0, Math.min(100, Math.round((value / c.goal) * 100)));
     const r = 28, circ = 2 * Math.PI * r;
-    return `<div class="ring"><svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg)"><circle cx="36" cy="36" r="${r}" fill="none" stroke="#2a292d" stroke-width="6"/><circle cx="36" cy="36" r="${r}" fill="none" stroke="#c4a574" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - pct / 100)}"/></svg><div><b>${esc(c.label)}</b><div class="sub">${value} / ${c.goal} ${esc(c.unit || "")}</div></div></div>`;
+    return `<div class="ring"><svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg)"><circle cx="36" cy="36" r="${r}" fill="none" stroke="#2a292d" stroke-width="6"/><circle cx="36" cy="36" r="${r}" fill="none" stroke="#2dd4bf" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - pct / 100)}"/></svg><div><b>${esc(c.label)}</b><div class="sub">${value} / ${c.goal} ${esc(c.unit || "")}</div></div></div>`;
   }
   if (c.type === "heading") return `<h2 class="kicker">${esc(c.title)}</h2>`;
   if (c.type === "list") {

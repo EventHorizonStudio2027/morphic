@@ -6,8 +6,8 @@
   --muted: #a39e96;
   --faint: #6f6a64;
   --line: #2a292d;
-  --accent: #c4a574;
-  --accent-soft: #241c14;
+  --accent: #2dd4bf;
+  --accent-soft: #0f2f2c;
   --danger: #e7a3a0;
   --sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --display: "Newsreader", Georgia, serif;
@@ -45,7 +45,7 @@ h1 { font-family: var(--display); font-weight: 500; letter-spacing: -0.03em; fon
 }
 .card { display: flex; gap: 14px; align-items: center; width: 100%; padding: 16px; }
 .card.stack { flex-direction: column; align-items: flex-start; height: 100%; }
-.card:hover { border-color: rgba(196, 165, 116, 0.45); }
+.card:hover { border-color: rgba(45, 212, 191, 0.45); }
 .card b { display: block; }
 .card span, .sub { color: var(--muted); font-size: 14px; }
 .action { margin-left: auto; color: var(--accent); font-size: 14px; white-space: nowrap; }

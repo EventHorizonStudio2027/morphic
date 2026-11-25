@@ -58,7 +58,7 @@ function save() { localStorage.setItem(KEY, JSON.stringify(pieces)); }
 function icon(name) {
   return `<span class="icon"><svg width="22" height="22" viewBox="0 0 24 24">${ICONS[name] || ICONS.briefcase}</svg></span>`;
 }
-function esc(s) { return String(s ?? "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """); }
+function esc(s) { return String(s ?? "").replace(/&/g, String.fromCharCode(38)+"amp;").replace(/</g, String.fromCharCode(38)+"lt;").replace(/>/g, String.fromCharCode(38)+"gt;").replace(/"/g, String.fromCharCode(38)+"quot;"); }
 function titleOf(row) { return row.exercise || row.name || row.description || row.client || "Entry"; }
 function subOf(row) {
   if (row.weight) return `${row.weight} lb × ${row.reps ?? ""}`;
